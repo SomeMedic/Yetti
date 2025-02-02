@@ -1,0 +1,18 @@
+Metadata-Version: 2.2
+Name: yetti
+Version: 0.1.0
+Summary: Инструмент для создания резервных копий
+Author: SomeMedic
+Keywords: backup,archive,files
+Requires-Python: >=3.8
+Requires-Dist: click>=8.1.7
+Requires-Dist: rich>=13.7.0
+Requires-Dist: cryptography>=41.0.7
+Requires-Dist: tqdm>=4.66.1
+Requires-Dist: PyQt6>=6.4.0
+Requires-Dist: schedule>=1.2.0
+Dynamic: author
+Dynamic: keywords
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
