@@ -1,5 +1,3 @@
 [console_scripts]
 yetti = yetti.__main__:main
-
-[gui_scripts]
-yetti-gui = yetti.__main__:main
+yetti-gui = yetti.__main__:main_gui

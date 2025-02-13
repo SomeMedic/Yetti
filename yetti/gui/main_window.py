@@ -18,6 +18,7 @@ from ..core.compression import CompressionMethod
 from .scheduler_dialog import SchedulerDialog
 from .storage_dialog import StorageDialog
 from .styles import MAIN_STYLE, CARD_STYLE
+from ..core.constants import EXTENSION_YETTI, EXTENSION_ONI, FILE_FILTER
 
 class StyledButton(QPushButton):
     """Кастомная кнопка с иконкой"""
@@ -81,7 +82,8 @@ class BackupWorker(QThread):
                     self.kwargs['source'],
                     compression_method=self.kwargs['compression_method'],
                     compression_level=self.kwargs['compression_level'],
-                    password=self.kwargs.get('password')
+                    password=self.kwargs.get('password'),
+                    extension=self.kwargs.get('extension')
                 )
                 if self.is_running:
                     self.progress.emit(50)
@@ -136,6 +138,35 @@ class BackupWorker(QThread):
         """Останавливает выполнение операции"""
         self.is_running = False
         self.wait()
+
+class BackupDialog(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+
+        # Существующие элементы интерфейса...
+
+        # Добавляем выбор расширения
+        extension_layout = QHBoxLayout()
+        extension_label = QLabel("Расширение:")
+        self.extension_combo = QComboBox()
+        self.extension_combo.addItems([EXTENSION_YETTI, EXTENSION_ONI])
+        extension_layout.addWidget(extension_label)
+        extension_layout.addWidget(self.extension_combo)
+        layout.addLayout(extension_layout)
+
+        self.setLayout(layout)
+
+    def get_values(self):
+        return {
+            'compression': self.compression_combo.currentText(),
+            'level': self.level_spin.value(),
+            'password': self.password_edit.text(),
+            'extension': self.extension_combo.currentText()
+        }
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -493,6 +524,15 @@ class MainWindow(QMainWindow):
         password_layout.addWidget(password_edit)
         layout.addLayout(password_layout)
         
+        # Добавляем выбор расширения
+        extension_layout = QHBoxLayout()
+        extension_label = QLabel("Расширение:")
+        self.extension_combo = QComboBox()
+        self.extension_combo.addItems([EXTENSION_YETTI, EXTENSION_ONI])
+        extension_layout.addWidget(extension_label)
+        extension_layout.addWidget(self.extension_combo)
+        layout.addLayout(extension_layout)
+        
         # Кнопка создания
         create_btn = QPushButton("Создать")
         layout.addWidget(create_btn)
@@ -504,7 +544,8 @@ class MainWindow(QMainWindow):
                 backup_dir=backup_dir_edit.text(),
                 compression_method=CompressionMethod(compression_combo.currentText()),
                 compression_level=level_spin.value(),
-                password=password_edit.text() or None
+                password=password_edit.text() or None,
+                extension=self.extension_combo.currentText()
             )
             self.start_worker(worker)
             dialog.close()

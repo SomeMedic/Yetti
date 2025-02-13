@@ -11,6 +11,7 @@ from .metadata import MetadataManager
 from .compression import Compressor, CompressionMethod
 from .encryption import Encryptor
 import sys
+from .constants import EXTENSION_YETTI, EXTENSION_ONI, SUPPORTED_EXTENSIONS
 
 def get_default_backup_dir() -> Path:
     """
@@ -52,20 +53,25 @@ class BackupEngine:
         source: Union[str, Path],
         compression_method: CompressionMethod = CompressionMethod.ZLIB,
         compression_level: int = 6,
-        password: Optional[str] = None
+        password: Optional[str] = None,
+        extension: str = EXTENSION_YETTI
     ) -> Path:
         """
-        Создание резервной копии файла или директории
-        
+        Создает резервную копию файла или директории.
+
         Args:
             source: Путь к файлу или директории для резервного копирования
             compression_method: Метод сжатия
             compression_level: Уровень сжатия (1-9)
             password: Пароль для шифрования (если None, шифрование не используется)
+            extension: Расширение файла резервной копии (.yetti или .👹)
             
         Returns:
-            Path: Путь к созданному файлу резервной копии (.yetti)
+            Path: Путь к созданному файлу резервной копии
         """
+        if extension not in SUPPORTED_EXTENSIONS:
+            raise ValueError(f"Неподдерживаемое расширение: {extension}. Поддерживаются: {', '.join(SUPPORTED_EXTENSIONS)}")
+
         source_path = Path(source)
         if not source_path.exists():
             raise FileNotFoundError(f"Путь не существует: {source}")
@@ -75,7 +81,7 @@ class BackupEngine:
         
         # Создаем имя файла резервной копии
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_name = f"{source_path.name}_{timestamp}.yetti"
+        backup_name = f"{source_path.name}_{timestamp}{extension}"
         backup_path = self.backup_dir / backup_name
         
         print(f"Путь резервной копии: {backup_path}")
@@ -322,45 +328,46 @@ class BackupEngine:
                 
     def list_backups(self) -> List[Dict]:
         """
-        Получение списка всех резервных копий
-        
-        Returns:
-            List[Dict]: Список метаданных резервных копий
+        Возвращает список всех резервных копий.
         """
         backups = []
         
-        try:
-            # Ищем только в директории для бэкапов
-            for backup_file in self.backup_dir.glob("*.yetti"):
-                # Создаем временную директорию для чтения метаданных
-                temp_dir = self.backup_dir / f"list_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                temp_dir.mkdir(parents=True, exist_ok=True)
-                
+        # Ищем файлы со всеми поддерживаемыми расширениями
+        for extension in SUPPORTED_EXTENSIONS:
+            for backup_file in self.backup_dir.glob(f"*{extension}"):
                 try:
-                    # Пробуем прочитать метаданные без пароля
-                    try:
-                        shutil.unpack_archive(backup_file, temp_dir, "zip")
-                        metadata = self.metadata_manager.load_metadata(temp_dir / "metadata.json")
-                    except:
-                        # Если не получилось, значит файл зашифрован
-                        metadata = {
-                            "name": backup_file.name,
-                            "encrypted": True,
-                            "backup_date": datetime.fromtimestamp(backup_file.stat().st_mtime).isoformat()
-                        }
-                        
-                    metadata.update({
-                        "backup_file": str(backup_file),  # Полный путь к файлу
-                        "backup_size": backup_file.stat().st_size
-                    })
+                    metadata = self._read_metadata(backup_file)
                     backups.append(metadata)
-                    
-                finally:
-                    # Очищаем временные файлы
-                    if temp_dir.exists():
-                        shutil.rmtree(temp_dir)
-                        
-        except (PermissionError, OSError) as e:
-            print(f"Ошибка при чтении директории бэкапов: {e}")
+                except Exception as e:
+                    print(f"Ошибка чтения метаданных {backup_file}: {e}")
                 
-        return backups 
+        return sorted(backups, key=lambda x: x.get('backup_date', ''), reverse=True)
+
+    def _read_metadata(self, backup_file: Path) -> Dict:
+        # Создаем временную директорию для чтения метаданных
+        temp_dir = self.backup_dir / f"list_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        
+        try:
+            # Пробуем прочитать метаданные без пароля
+            try:
+                shutil.unpack_archive(backup_file, temp_dir, "zip")
+                metadata = self.metadata_manager.load_metadata(temp_dir / "metadata.json")
+            except:
+                # Если не получилось, значит файл зашифрован
+                metadata = {
+                    "name": backup_file.name,
+                    "encrypted": True,
+                    "backup_date": datetime.fromtimestamp(backup_file.stat().st_mtime).isoformat()
+                }
+                
+            metadata.update({
+                "backup_file": str(backup_file),  # Полный путь к файлу
+                "backup_size": backup_file.stat().st_size
+            })
+            return metadata
+            
+        finally:
+            # Очищаем временные файлы
+            if temp_dir.exists():
+                shutil.rmtree(temp_dir) 

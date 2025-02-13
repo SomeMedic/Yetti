@@ -19,4 +19,5 @@ yetti/gui/icons/restore.svg
 yetti/gui/icons/schedule.svg
 yetti/gui/icons/storage.svg
 yetti/gui/icons/verify.svg
+yetti/gui/icons/yeti.ico
 yetti/gui/icons/yeti.png

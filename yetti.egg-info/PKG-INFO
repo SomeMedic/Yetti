@@ -11,6 +11,7 @@ Requires-Dist: cryptography>=41.0.7
 Requires-Dist: tqdm>=4.66.1
 Requires-Dist: PyQt6>=6.4.0
 Requires-Dist: schedule>=1.2.0
+Requires-Dist: pillow>=10.0.0
 Dynamic: author
 Dynamic: keywords
 Dynamic: requires-dist

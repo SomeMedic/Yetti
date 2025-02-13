@@ -8,6 +8,7 @@ from rich.table import Table
 from rich.progress import Progress
 from .core.backup_engine import BackupEngine, get_default_backup_dir
 from .core.compression import CompressionMethod
+from .core.constants import EXTENSION_YETTI, EXTENSION_ONI, SUPPORTED_EXTENSIONS
 import sys
 
 console = Console()
@@ -26,7 +27,9 @@ def cli():
 @click.option('--level', '-l', type=click.IntRange(1, 9), default=6,
               help='Уровень сжатия (1-9)')
 @click.option('--password', '-p', type=str, help='Пароль для шифрования')
-def backup(source, backup_dir, compression, level, password):
+@click.option('--extension', '-e', type=click.Choice([EXTENSION_YETTI, EXTENSION_ONI]),
+              default=EXTENSION_YETTI, help='Расширение файла резервной копии')
+def backup(source, backup_dir, compression, level, password, extension):
     """Создать резервную копию файла или директории"""
     try:
         engine = BackupEngine(backup_dir)
@@ -39,7 +42,8 @@ def backup(source, backup_dir, compression, level, password):
                 source,
                 compression_method=compression_method,
                 compression_level=level,
-                password=password
+                password=password,
+                extension=extension
             )
             
             progress.update(task, completed=100)
